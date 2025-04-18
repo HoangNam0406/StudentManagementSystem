@@ -136,7 +136,7 @@ public class StudentManagementSystem {
         txtSearch.setBounds(460, 20, 150, 20);
         txtSearch.addKeyListener(new KeyAdapter() {
             public void keyReleased(KeyEvent e) {
-                searchStudent(txtSearch.getText());
+                linearsearchStudent(txtSearch.getText());
             }
         });
         frame.add(txtSearch);
@@ -349,18 +349,34 @@ public class StudentManagementSystem {
         showMessage("Student updated successfully!");
     }
 
-    private void searchStudent(String id) {
-        if (id.trim().isEmpty()) {
-            refreshTable();
-            return;
+    private void linearsearchStudent(String id) {
+        model.setRowCount(0); // Clear the table
+    boolean found = false;
+    
+    if (id.trim().isEmpty()) {
+        refreshTable(); // Show all students if search is empty
+        return;
+    }
+    
+    String query = id.trim().toLowerCase();
+    for (HashMap<String, String> student : students) {
+        if (student.get("ID").toLowerCase().contains(query)) {
+            model.addRow(new Object[]{
+                student.get("ID"),
+                student.get("Name"),
+                student.get("Class"),
+                student.get("Gender"),
+                student.get("Major"),
+                Double.parseDouble(student.get("Average")),
+                student.get("Rank")
+            });
+            found = true;
         }
-        for (int i = 0; i < model.getRowCount(); i++) {
-            if (model.getValueAt(i, 0).toString().equals(id)) {
-                table.setRowSelectionInterval(i, i);
-                return;
-            }
-        }
-        showMessage("Operational Error: Student with ID '" + id + "' not found!");
+    }
+    
+    if (!found) {
+        showMessage("No students found with ID containing '" + id + "'!");
+    }
     }
 
     private void clearFields() {
