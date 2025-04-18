@@ -1,13 +1,8 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
-import java.util.List;
 import javax.swing.table.DefaultTableModel;
 
 public class StudentManagementSystem {
@@ -16,18 +11,18 @@ public class StudentManagementSystem {
     private DefaultTableModel model;
     private JTextField txtID, txtName, txtClass, txtGender, txtSearch;
     private JComboBox<String> cbMajor;
-    private JLabel lblSub1, lblSub2, lblSub3;
+    private JLabel lblSub1, lblSub2, lblSub3, lblAverage;
     private JTextField txtScore1, txtScore2, txtScore3;
-    private JLabel lblAverage;
     private ArrayList<HashMap<String, String>> students;
 
     public StudentManagementSystem() {
         students = new ArrayList<>();
-        frame = new JFrame("Student Management");
+        frame = new JFrame("Student Management System");
         frame.setSize(1000, 500);
         frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         frame.setLayout(null);
 
+        // Save data on window close
         frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -36,7 +31,7 @@ public class StudentManagementSystem {
             }
         });
 
-        // Labels and Fields
+        // Input Fields
         JLabel lblID = new JLabel("Student ID:");
         lblID.setBounds(20, 20, 100, 20);
         frame.add(lblID);
@@ -70,6 +65,7 @@ public class StudentManagementSystem {
         frame.add(lblMajor);
         cbMajor = new JComboBox<>(new String[]{"BIZ", "GD", "IT"});
         cbMajor.setBounds(120, 140, 150, 20);
+        cbMajor.addActionListener(e -> updateSubjects());
         frame.add(cbMajor);
 
         lblSub1 = new JLabel("Subject 1:");
@@ -100,8 +96,6 @@ public class StudentManagementSystem {
         lblAverage.setBounds(120, 260, 150, 20);
         frame.add(lblAverage);
 
-        cbMajor.addActionListener(e -> updateSubjects());
-
         // Buttons
         JButton btnAdd = new JButton("Add");
         btnAdd.setBounds(20, 290, 80, 25);
@@ -120,7 +114,10 @@ public class StudentManagementSystem {
 
         JButton btnSave = new JButton("Save");
         btnSave.setBounds(220, 320, 80, 25);
-        btnSave.addActionListener(e -> saveToFile());
+        btnSave.addActionListener(e -> {
+            saveToFile();
+            showMessage("Data is stored in the system!");
+        });
         frame.add(btnSave);
 
         JButton btnClear = new JButton("Clear");
@@ -129,11 +126,11 @@ public class StudentManagementSystem {
         frame.add(btnClear);
 
         // Search
-        JLabel lblSearch = new JLabel("Search:");
-        lblSearch.setBounds(400, 20, 60, 20);
+        JLabel lblSearch = new JLabel("Search by ID:");
+        lblSearch.setBounds(400, 20, 80, 20);
         frame.add(lblSearch);
         txtSearch = new JTextField();
-        txtSearch.setBounds(460, 20, 150, 20);
+        txtSearch.setBounds(480, 20, 130, 20);
         txtSearch.addKeyListener(new KeyAdapter() {
             public void keyReleased(KeyEvent e) {
                 linearsearchStudent(txtSearch.getText());
@@ -141,7 +138,7 @@ public class StudentManagementSystem {
         });
         frame.add(txtSearch);
 
-        // Sort Button (aligned with Search)
+        // Sort Button
         JButton btnSort = new JButton("Sort");
         btnSort.setBounds(620, 20, 80, 20);
         btnSort.addActionListener(e -> showSortOptions());
@@ -174,7 +171,7 @@ public class StudentManagementSystem {
         });
 
         updateSubjects();
-        loadFromFile();
+        loadFromFile(); // Load saved data on startup
         frame.setVisible(true);
     }
 
@@ -290,7 +287,7 @@ public class StudentManagementSystem {
     private void deleteStudent() {
         int selectedRow = table.getSelectedRow();
         if (selectedRow == -1) {
-            showMessage("Operational Error: Please select a student to delete!");
+            showMessage("Please select a student to delete!");
             return;
         }
         students.remove(selectedRow);
@@ -301,7 +298,7 @@ public class StudentManagementSystem {
     private void updateStudent() {
         int selectedRow = table.getSelectedRow();
         if (selectedRow == -1) {
-            showMessage("Operational Error: Please select a student to update!");
+            showMessage("Please select a student to update!");
             return;
         }
 
@@ -350,38 +347,38 @@ public class StudentManagementSystem {
     }
 
     private void linearsearchStudent(String id) {
-        model.setRowCount(0); // Clear the table
-    boolean found = false;
-    
-    if (id.trim().isEmpty()) {
-        refreshTable(); // Show all students if search is empty
-        return;
-    }
-    
-    String query = id.trim().toLowerCase();
-    for (HashMap<String, String> student : students) {
-        if (student.get("ID").toLowerCase().contains(query)) {
-            model.addRow(new Object[]{
-                student.get("ID"),
-                student.get("Name"),
-                student.get("Class"),
-                student.get("Gender"),
-                student.get("Major"),
-                Double.parseDouble(student.get("Average")),
-                student.get("Rank")
-            });
-            found = true;
+        model.setRowCount(0);
+        boolean found = false;
+
+        if (id.trim().isEmpty()) {
+            refreshTable();
+            return;
         }
-    }
-    
-    if (!found) {
-        showMessage("No students found with ID containing '" + id + "'!");
-    }
+
+        String query = id.trim().toLowerCase();
+        for (HashMap<String, String> student : students) {
+            if (student.get("ID").toLowerCase().contains(query)) {
+                model.addRow(new Object[]{
+                    student.get("ID"),
+                    student.get("Name"),
+                    student.get("Class"),
+                    student.get("Gender"),
+                    student.get("Major"),
+                    Double.parseDouble(student.get("Average")),
+                    student.get("Rank")
+                });
+                found = true;
+            }
+        }
+
+        if (!found) {
+            showMessage("No students found with ID containing '" + id + "'!");
+        }
     }
 
     private void clearFields() {
         int confirm = JOptionPane.showConfirmDialog(frame,
-                "Are you sure you want to delete all data you are entering?",
+                "Are you sure you want to clear all input fields?",
                 "Confirm Clear",
                 JOptionPane.YES_NO_OPTION);
 
@@ -405,18 +402,17 @@ public class StudentManagementSystem {
         model.setRowCount(0);
         for (HashMap<String, String> student : students) {
             model.addRow(new Object[]{
-                    student.get("ID"),
-                    student.get("Name"),
-                    student.get("Class"),
-                    student.get("Gender"),
-                    student.get("Major"),
-                    Double.parseDouble(student.get("Average")),
-                    student.get("Rank")
+                student.get("ID"),
+                student.get("Name"),
+                student.get("Class"),
+                student.get("Gender"),
+                student.get("Major"),
+                Double.parseDouble(student.get("Average")),
+                student.get("Rank")
             });
         }
     }
 
-    // QuickSort Implementation
     private void quickSortStudents(ArrayList<HashMap<String, String>> list, int low, int high, String key) {
         if (low < high) {
             int pi = partition(list, low, high, key);
@@ -446,7 +442,7 @@ public class StudentManagementSystem {
             int n2 = num2.isEmpty() ? 0 : Integer.parseInt(num2);
             return Integer.compare(n1, n2);
         }
-        return val1.compareTo(val2); // For Name
+        return val1.compareTo(val2);
     }
 
     private void showSortOptions() {
@@ -458,94 +454,40 @@ public class StudentManagementSystem {
                 JOptionPane.INFORMATION_MESSAGE,
                 null, options, options[0]);
 
-        if (choice == 0) { // Sort by Student ID
+        if (choice == 0) {
             quickSortStudents(students, 0, students.size() - 1, "ID");
             refreshTable();
-        } else if (choice == 1) { // Sort by Name
+        } else if (choice == 1) {
             quickSortStudents(students, 0, students.size() - 1, "Name");
             refreshTable();
         }
     }
 
+    private void saveToFile() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("students.dat"))) {
+            oos.writeObject(students);
+        } catch (IOException e) {
+            showMessage("Error saving data: " + e.getMessage());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void loadFromFile() {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("students.dat"))) {
+            Object obj = ois.readObject();
+            if (obj instanceof ArrayList) {
+                students = (ArrayList<HashMap<String, String>>) obj;
+                refreshTable();
+            }
+        } catch (FileNotFoundException e) {
+            // File doesn't exist yet, start with empty list
+        } catch (IOException | ClassNotFoundException e) {
+            showMessage("Error loading data: " + e.getMessage());
+        }
+    }
+
     private void showMessage(String message) {
         JOptionPane.showMessageDialog(frame, message);
-    }
-
-    private void saveToFile() {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter("students.csv"))) {
-            writer.write("Student ID,Student Name,Class,Gender,Major,Average,Rank\n");
-            for (HashMap<String, String> student : students) {
-                String id = escapeCSV(student.get("ID"));
-                String name = escapeCSV(student.get("Name"));
-                String className = escapeCSV(student.get("Class"));
-                String gender = escapeCSV(student.get("Gender"));
-                String major = escapeCSV(student.get("Major"));
-                String avg = escapeCSV(student.get("Average"));
-                String rank = escapeCSV(student.get("Rank"));
-                writer.write(String.format("%s,%s,%s,%s,%s,%s,%s\n", id, name, className, gender, major, avg, rank));
-            }
-            showMessage("Data saved successfully to students.csv!");
-        } catch (IOException ex) {
-            showMessage("System Error: Failed to save data - " + ex.getMessage());
-        }
-    }
-
-    private void loadFromFile() {
-        students.clear();
-        model.setRowCount(0);
-        try (BufferedReader reader = new BufferedReader(new FileReader("students.csv"))) {
-            String line;
-            boolean firstLine = true;
-            while ((line = reader.readLine()) != null) {
-                if (firstLine) {
-                    firstLine = false;
-                    continue;
-                }
-                String[] data = parseCSVLine(line);
-                if (data.length == 7) {
-                    HashMap<String, String> student = new HashMap<>();
-                    student.put("ID", data[0]);
-                    student.put("Name", data[1]);
-                    student.put("Class", data[2]);
-                    student.put("Gender", data[3]);
-                    student.put("Major", data[4]);
-                    student.put("Average", data[5]);
-                    student.put("Rank", data[6]);
-                    students.add(student);
-                    model.addRow(new Object[]{data[0], data[1], data[2], data[3], data[4], Double.parseDouble(data[5]), data[6]});
-                }
-            }
-            System.out.println("Data loaded successfully from students.csv");
-        } catch (IOException ex) {
-            showMessage("System Error: Failed to load data - " + ex.getMessage());
-        }
-    }
-
-    private String escapeCSV(String value) {
-        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
-            return "\"" + value.replace("\"", "\"\"") + "\"";
-        }
-        return value;
-    }
-
-    private String[] parseCSVLine(String line) {
-        List<String> result = new ArrayList<>();
-        boolean inQuotes = false;
-        StringBuilder field = new StringBuilder();
-
-        for (int i = 0; i < line.length(); i++) {
-            char c = line.charAt(i);
-            if (c == '"') {
-                inQuotes = !inQuotes;
-            } else if (c == ',' && !inQuotes) {
-                result.add(field.toString());
-                field = new StringBuilder();
-            } else {
-                field.append(c);
-            }
-        }
-        result.add(field.toString());
-        return result.toArray(new String[0]);
     }
 
     public static void main(String[] args) {
